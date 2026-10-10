@@ -24,7 +24,20 @@ jobs:
           gradle-version: "8.14.3"
 
       - name: Build
-        run: gradle assembleRelease --no-daemon --stacktrace
+        run: |
+          set -o pipefail
+          gradle assembleRelease --no-daemon 2>&1 | tee build.log
+
+      - name: Report build errors
+        if: failure()
+        run: |
+          # Surface compiler/Gradle errors as annotations (readable without the full log)
+          grep -E "^e: |error:|What went wrong|Could not|> " build.log | grep -v "^> Task" | head -60 > errs.txt || true
+          split -l 6 errs.txt chunk_ || true
+          for f in chunk_*; do
+            msg=$(sed 's/%/%25/g' "$f" | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error::$msg"
+          done
 
       - name: Rename APK
         run: cp app/build/outputs/apk/release/app-release.apk HealthHub.apk
