@@ -165,8 +165,9 @@ class HealthRepository(private val context: Context) {
         val bmr = safe { read(BasalMetabolicRateRecord::class, day) }.orEmpty().maxByOrNull { it.time }
         val bp = safe { read(BloodPressureRecord::class, day) }.orEmpty().sortedBy { it.time }
 
-        (spo2 + sessions + listOfNotNull(weight, fat, lean, bone, water, bmr) + bp)
-            .forEach { sources += it.metadata.dataOrigin.packageName }
+        val allRecords: List<Record> =
+            spo2 + sessions + listOfNotNull<Record>(weight, fat, lean, bone, water, bmr) + bp
+        allRecords.forEach { sources += it.metadata.dataOrigin.packageName }
 
         return DaySummary(
             date = date,
